@@ -1,0 +1,44 @@
+name: speedrun-server
+
+services:
+  minecraft:
+    image: itzg/minecraft-server:latest
+    environment:
+      EULA: "TRUE"
+      TYPE: VANILLA
+      VERSION: "26.3"
+      MEMORY: 2G
+      MOTD: "Speedrun Server - go go go!"
+      # The glowing sword in the server list. Only used if the world has no icon yet.
+      ICON: https://raw.githubusercontent.com/Elduin-Labs/speedrun-server/main/server-icon.png
+      DIFFICULTY: normal
+      SPAWN_PROTECTION: 0
+      VIEW_DISTANCE: 10
+      SIMULATION_DISTANCE: 10
+      ENABLE_RCON: "true"
+      # The dashboard asks the server questions over RCON every second.
+      # Don't spam those into the chat of anyone who is an op.
+      BROADCAST_RCON_TO_OPS: "false"
+    volumes:
+      - mc-data:/data
+    restart: unless-stopped
+
+  # One port does both jobs: Minecraft joins on localhost:25560,
+  # and opening http://localhost:25560 in a browser shows the dashboard.
+  dashboard:
+    build: ./dashboard
+    environment:
+      MC_HOST: minecraft
+      MC_VERSION: "26.3"
+    ports:
+      - "25560:25560"
+    volumes:
+      - mc-data:/data:ro
+      - dashboard-data:/state
+    depends_on:
+      - minecraft
+    restart: unless-stopped
+
+volumes:
+  mc-data:
+  dashboard-data:

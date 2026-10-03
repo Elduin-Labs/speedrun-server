@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speedrun Server</title>
+<link rel="icon" href="/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #17191c;
+    --panel: #23262b;
+    --panel-2: #2c3036;
+    --line: #3a3f46;
+    --text: #eef0f2;
+    --muted: #9aa3ad;
+    --green: #5fd068;
+    --red: #ff5a52;
+    --gold: #ffcc33;
+    --purple: #c08bff;
+    --blue: #59b7ff;
+    --pixel: 'Press Start 2P', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-bottom: 18px; }
+  .logo { width: 48px; height: 48px; image-rendering: pixelated; border-radius: 6px; }
+  h1 { font: 20px/1.3 var(--pixel); margin: 0; color: var(--gold); text-shadow: 3px 3px 0 #000; }
+  .pill { font-weight: 700; font-size: 13px; padding: 4px 10px; border-radius: 99px; background: var(--panel-2); }
+  .pill.on { color: var(--green); }
+  .pill.off { color: var(--red); }
+  .join { margin-left: auto; font-size: 14px; color: var(--muted); }
+  .join code { color: var(--text); background: var(--panel-2); padding: 3px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+
+  .world { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .stat { background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+  .stat .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .stat .v { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
+
+  .layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .player { background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+  .ptop { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+  .head { width: 48px; height: 48px; image-rendering: pixelated; border-radius: 4px; background: var(--panel-2); }
+  .pname { font: 14px var(--pixel); }
+  .dim { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; margin-top: 6px; }
+  .dim.overworld { background: #1f3d23; color: var(--green); }
+  .dim.the_nether { background: #4a1d1b; color: var(--red); }
+  .dim.the_end { background: #33224d; color: var(--purple); }
+  .timer { margin-left: auto; font: 28px var(--pixel); color: var(--text); text-shadow: 3px 3px 0 #000; }
+  .timer.done { color: var(--gold); }
+
+  .bars { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 14px 0 6px; font-size: 18px; letter-spacing: 1px; }
+  .bars .lbl { font-size: 12px; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+  .faded { opacity: .2; }
+  .halfop { opacity: .55; }
+  .coords { font-size: 14px; color: var(--muted); }
+  .coords b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 240px 1fr; gap: 16px; margin-top: 14px; }
+  @media (max-width: 640px) { .cols { grid-template-columns: 1fr; } .timer { margin-left: 0; font-size: 22px; } }
+  h3 { font: 10px var(--pixel); color: var(--muted); margin: 0 0 10px; }
+
+  .splits { list-style: none; margin: 0; padding: 0; }
+  .splits li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 8px; border-radius: 6px; font-size: 14px; }
+  .splits li:nth-child(odd) { background: var(--panel-2); }
+  .splits li.got { color: var(--text); }
+  .splits li.todo { color: var(--muted); }
+  .splits .t { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .splits li.got .t { color: var(--green); }
+
+  .keys { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .key { background: var(--panel-2); border-radius: 8px; padding: 6px 10px; font-size: 14px; }
+  .key b { font-size: 16px; margin-left: 4px; }
+  .key.zero { opacity: .35; }
+
+  .inv { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; }
+  .slot { aspect-ratio: 1; background: #8b8b8b22; border: 2px solid #00000055; border-radius: 4px; position: relative; padding: 3px; font-size: 10px; line-height: 1.15; overflow: hidden; color: var(--text); }
+  .slot.hot { border-color: #ffffff22; }
+  .slot .n { position: absolute; right: 3px; bottom: 2px; font: 9px var(--pixel); text-shadow: 1px 1px 0 #000; }
+  .inv .gap { grid-column: 1 / -1; height: 4px; }
+
+  .btn { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 2px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer; margin-top: 14px; }
+  .btn:hover { color: var(--text); border-color: var(--muted); }
+
+  .empty { background: var(--panel); border: 2px dashed var(--line); border-radius: 12px; padding: 40px 20px; text-align: center; color: var(--muted); }
+  .empty .big { font: 14px/1.8 var(--pixel); color: var(--text); }
+
+  .feed { background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 14px; }
+  .feed ul { list-style: none; margin: 0; padding: 0; }
+  .feed li { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; overflow-wrap: anywhere; }
+  .feed li:last-child { border-bottom: 0; }
+  .feed .when { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; flex: none; padding-top: 2px; }
+  .feed .adv { color: var(--gold); }
+  .feed .death { color: var(--red); }
+  .feed .join, .feed .server { color: var(--green); }
+  .feed .leave { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img class="logo" src="/icon.png" alt="" onerror="this.remove()">
+    <h1>Speedrun Server</h1>
+    <span id="status" class="pill off">Starting…</span>
+    <div class="join">Join in Minecraft: <code id="addr" title="Click to copy">localhost:25560</code></div>
+  </header>
+
+  <section class="world" id="world"></section>
+
+  <div class="layout">
+    <main id="players"></main>
+    <aside class="feed">
+      <h3>WHAT'S HAPPENING</h3>
+      <ul id="feed"></ul>
+    </aside>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let state = null, gotAt = 0;
+
+const DIMS = { overworld: '🌳 Overworld', the_nether: '🔥 Nether', the_end: '🌌 The End' };
+const KEYS = [
+  ['🔩', 'Iron', i => i.id === 'iron_ingot'],
+  ['⬛', 'Obsidian', i => i.id === 'obsidian'],
+  ['🔥', 'Flint & steel', i => i.id === 'flint_and_steel'],
+  ['🪄', 'Blaze rods', i => i.id === 'blaze_rod'],
+  ['✨', 'Blaze powder', i => i.id === 'blaze_powder'],
+  ['🟢', 'Ender pearls', i => i.id === 'ender_pearl'],
+  ['👁️', 'Eyes of ender', i => i.id === 'ender_eye'],
+  ['🛏️', 'Beds', i => i.id.endsWith('_bed')],
+];
+const FEED_ICON = { chat: '💬', join: '➡️', leave: '⬅️', adv: '🏆', death: '💀', server: '🟢' };
+
+function fmt(ticks) {
+  const total = Math.max(0, Math.floor(ticks * 50));
+  const h = Math.floor(total / 3600000);
+  const m = Math.floor(total / 60000) % 60;
+  const s = Math.floor(total / 1000) % 60;
+  const t = Math.floor(total / 100) % 10;
+  const ss = String(s).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}.${t}`;
+}
+
+function clock(daytime) {
+  const mins = Math.floor(((daytime / 1000 + 6) % 24) * 60);
+  const h = Math.floor(mins / 60), m = mins % 60;
+  const night = daytime >= 13000 && daytime < 23000;
+  return `${night ? '🌙' : '☀️'} ${(h % 12) || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+function icons(value, max, full) {
+  let out = '';
+  for (let i = 0; i < 10; i++) {
+    const v = value - i * (max / 10);
+    const cls = v >= max / 10 ? '' : v > 0 ? 'halfop' : 'faded';
+    out += `<span class="${cls}">${full}</span>`;
+  }
+  return out;
+}
+
+function liveTicks(p) {
+  if (p.finished || !state.online) return p.timerTicks;
+  return p.timerTicks + (performance.now() - gotAt) / 50;
+}
+
+function renderPlayer(p) {
+  const nether = p.dim === 'the_nether';
+  const other = nether
+    ? `Overworld: <b>${p.pos[0] * 8}, ${p.pos[2] * 8}</b>`
+    : p.dim === 'overworld' ? `Nether: <b>${Math.floor(p.pos[0] / 8)}, ${Math.floor(p.pos[2] / 8)}</b>` : '';
+
+  const splits = state.splitDefs.map(s => {
+    const t = p.splits[s.key];
+    return `<li class="${t != null ? 'got' : 'todo'}"><span>${t != null ? '✅' : '⬜'} ${esc(s.label)}</span><span class="t">${t != null ? fmt(t) : '—'}</span></li>`;
+  }).join('');
+
+  const keys = KEYS.map(([emoji, label, match]) => {
+    const n = p.items.filter(match).reduce((a, i) => a + i.count, 0);
+    return `<span class="key ${n ? '' : 'zero'}" title="${label}">${emoji} ${label}<b>${n}</b></span>`;
+  }).join('');
+
+  const bySlot = {};
+  for (const i of p.items) bySlot[i.slot] = i;
+  const slot = n => {
+    const i = bySlot[n];
+    const hot = n < 9 ? ' hot' : '';
+    if (!i) return `<div class="slot${hot}"></div>`;
+    const name = i.id.replace(/_/g, ' ');
+    return `<div class="slot${hot}" title="${esc(name)} ×${i.count}">${esc(name)}${i.count > 1 ? `<span class="n">${i.count}</span>` : ''}</div>`;
+  };
+  let inv = '';
+  for (let n = 9; n < 36; n++) inv += slot(n);
+  inv += '<div class="gap"></div>';
+  for (let n = 0; n < 9; n++) inv += slot(n);
+
+  return `<article class="player">
+    <div class="ptop">
+      <img class="head" alt="" src="https://mc-heads.net/avatar/${esc(p.name)}/48" onerror="this.style.visibility='hidden'">
+      <div>
+        <div class="pname">${esc(p.name)}</div>
+        <span class="dim ${esc(p.dim)}">${DIMS[p.dim] || esc(p.dim)}</span>
+      </div>
+      <div class="timer ${p.finished ? 'done' : ''}" data-timer="${esc(p.name)}">${p.finished ? '🏆 ' : ''}${fmt(p.timerTicks)}</div>
+    </div>
+    <div class="bars">
+      <span>${icons(p.health, 20, '❤️')}<span class="lbl">${Math.ceil(p.health)}/20</span></span>
+      <span>${icons(p.food, 20, '🍗')}<span class="lbl">${p.food}/20</span></span>
+      <span style="font-size:15px">⭐ Level <b>${p.xp}</b></span>
+    </div>
+    <div class="coords">📍 X <b>${p.pos[0]}</b> · Y <b>${p.pos[1]}</b> · Z <b>${p.pos[2]}</b>${other ? ` &nbsp;·&nbsp; ${other}` : ''}</div>
+    <div class="cols">
+      <div><h3>SPLITS</h3><ul class="splits">${splits}</ul>
+        <button class="btn" data-reset="${esc(p.name)}">↺ Reset timer</button></div>
+      <div><h3>SPEEDRUN STUFF</h3><div class="keys">${keys}</div>
+        <h3>INVENTORY</h3><div class="inv">${inv}</div></div>
+    </div>
+  </article>`;
+}
+
+function render() {
+  const s = state;
+  const status = $('#status');
+  status.className = 'pill ' + (s.online ? 'on' : 'off');
+  status.textContent = s.online ? '● Online' : '● Starting up…';
+
+  const stats = s.online ? [
+    ['Players', `${s.players.length}${s.max ? ' / ' + s.max : ''}`],
+    ['Version', s.version || '?'],
+    ['Day', s.day],
+    ['Time', clock(s.daytime)],
+    ['Difficulty', s.difficulty],
+    ['Mobs loaded', s.mobs],
+    ['Seed', s.seed ?? '?'],
+  ] : [['Server', 'Waking up — this takes a minute the first time']];
+  $('#world').innerHTML = stats.map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`).join('');
+
+  $('#players').innerHTML = s.players && s.players.length
+    ? s.players.map(renderPlayer).join('')
+    : `<div class="empty"><div class="big">Nobody's playing yet</div><p>Open Minecraft ${esc(s.version || '')}, go to Multiplayer, and join <b>localhost:25560</b>.</p></div>`;
+
+  $('#feed').innerHTML = (s.events || []).length
+    ? s.events.map(e => `<li class="${e.kind}"><span class="when">${esc(e.time)}</span><span>${FEED_ICON[e.kind] || ''} ${esc(e.text)}</span></li>`).join('')
+    : '<li class="leave">Nothing yet.</li>';
+}
+
+async function tick() {
+  try {
+    const r = await fetch('/api/state', { cache: 'no-store' });
+    state = await r.json();
+    gotAt = performance.now();
+    render();
+  } catch {
+    $('#status').className = 'pill off';
+    $('#status').textContent = '● Can’t reach server';
+  }
+  setTimeout(tick, 1000);
+}
+
+(function frame() {
+  if (state && state.players) {
+    for (const p of state.players) {
+      const el = document.querySelector(`[data-timer="${CSS.escape(p.name)}"]`);
+      if (el && !p.finished) el.textContent = fmt(liveTicks(p));
+    }
+  }
+  requestAnimationFrame(frame);
+})();
+
+document.addEventListener('click', async e => {
+  const name = e.target.dataset && e.target.dataset.reset;
+  if (name && confirm(`Start ${name}'s timer over from 0:00?`)) {
+    await fetch('/api/reset?player=' + encodeURIComponent(name), { method: 'POST' });
+  }
+  if (e.target.id === 'addr') navigator.clipboard?.writeText('localhost:25560');
+});
+
+tick();
+</script>
+</body>
+</html>
